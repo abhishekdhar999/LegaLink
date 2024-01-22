@@ -52,21 +52,23 @@ const tokenSchema = require('../models/tokenSchema');
 
 
 
-router.get('/users',async(req,res)=>{
-    try {
-        const users =  await User.find();
-        res.json(users)
-    } catch (error) {
-        console.error(error.message);
-    res.status(500).send('Server Error');
-    }
-})
+// router.get('/users',async(req,res)=>{
+//     try {
+//         const users =  await User.find();
+//         res.json(users)
+//     } catch (error) {
+//         console.error(error.message);
+//     res.status(500).send('Server Error');
+//     }
+// })
 
 
 // create a user  using :post "api/auth/".doesnt require auth
-router.post('/createuser', [body('name').notEmpty(),
-body('email').isEmail(),
-body('password').isLength({ min: 5 })], async (req, res) => {
+router.post('/createuser', 
+// [body('name').notEmpty(),
+// body('email').isEmail(),
+// body('password').isLength({ min: 5 })],
+ async (req, res) => {
     const { email } = req.body
     // const verificationCode = Math.floor(100000 + Math.random() * 900000);
       let success = false;
@@ -107,27 +109,16 @@ console.log("otp",OTP)
             },
         });
         const authtoken = jwt.sign(data, JWT_SECRET)
-        console.log(authtoken)
-// localStorage.setItem("authToken",authtoken)
-        // const otptoken = crypto.randomBytes(32).toString("hex")
-        // token schema // token generation for every new user
+        console.log("authtoken",authtoken) 
         const token = new Token({
             userId: user.id,
             token: OTP 
         })
         await token.save();
-
-        
-        // const url = `${"http://localhost:6001"}users/${user.id}/verify/${authtoken}`
-        // console.log(url)
-
-        // sending an email for verification
+ // sending an email for verification
         await sendEmail(email, "verify Email",OTP );
         res.status(201).send({ message: "an email sent to your account" })
-
-
         // succesfull generation of authentication token
-        //  success = true
         let success = true;
         console.log("ma end ma hu")
         if(user){
@@ -140,17 +131,12 @@ console.log("otp",OTP)
       token: authtoken,
             })
         }
-        res.json({ success, authtoken })
-        
-
-
     } catch (error) {
         console.log(error.message)
-        res.status(500).send("internal server error occured")
+        // res.status(500).send("internal server error occured")
     }
 
 })
-
 // verefying the email and 
 router.post("/verify",async (req, res) =>{
     const {userId,otp} =req.body;
@@ -180,11 +166,7 @@ router.post("/verify",async (req, res) =>{
   if(tokenSchemaToken.token !== otp)return res.status(500).send("provide valid token");
   console.log("tokken" + tokenSchemaToken.token) 
   console.log("otp" + otp)
-//   console.log(tokenSchemaToken)
-//  const isMatched =  await verificationToken.compareToken(otp);
-//  console.log(otp)
-//  console.log(isMatched)
-//  if(!isMatched) return res.status(500).send("provide valid token"); 
+
 
   user.verified = true;
  await tokenSchema.findByIdAndDelete(verificationToken._id);
@@ -210,7 +192,6 @@ router.post("/verify",async (req, res) =>{
 router.post("/login", [body('email').isEmail(), body('password').exists()], async (req, res) => {
 
        let success =false;
-// let success;
     const result = validationResult(req);
     if (!result.isEmpty()) {
         return res.status(400).json({success  })
@@ -219,19 +200,14 @@ router.post("/login", [body('email').isEmail(), body('password').exists()], asyn
     const { email, password} = req.body;
 
     try {
-
-       
-        // seraching from database
+    // seraching from database
         let user = await User.findOne({ email })
-
-        console.log("auth vala user",user)
+      console.log("auth vala user",user)
         // let userpassword = await User.findOne({password})
         if (!user) {
-
-            return res.status(400).json({ error: "login with correct credentials" })
+  return res.status(400).json({ error: "login with correct credentials" })
         }
-
-        if(!user.verified){
+if(!user.verified){
             return res.status(400).json({ error: "User not verified. Please verify your email first." }); 
         }
 
@@ -251,9 +227,7 @@ router.post("/login", [body('email').isEmail(), body('password').exists()], asyn
                
             });
         }
-
-
-        console.log("auth vali usedid",user)
+console.log("auth vali usedid",user)
         const data = {
             user: {
                 id: user._id
@@ -263,8 +237,6 @@ router.post("/login", [body('email').isEmail(), body('password').exists()], asyn
         const authtoken = jwt.sign(data, JWT_SECRET)
         success = true
         console.log("login vala authtoken",authtoken)
-        console.log("puraana login")
-        // localStorage.setItem("authToken",authtoken)
 
         res.json({ success,  _id: user._id,
             name: user.name,
@@ -282,18 +254,18 @@ router.post("/login", [body('email').isEmail(), body('password').exists()], asyn
 
 // ROUTE:3 get a user details after loggedin post request "/api/auth/getuser" login required
 
-router.get("/getuser", protect , async (req, res) => {
+// router.get("/getuser", protect , async (req, res) => {
 
 
-    try {
-        let userid = req.user.id
+//     try {
+//         let userid = req.user.id
 
-        const user = await User.findById(userid).select("-password")
-        res.json(user)
-    } catch (error) {
-        console.log(error.message)
-        res.status(500).send("internal server error")
-    }
+//         const user = await User.findById(userid).select("-password")
+//         res.json(user)
+//     } catch (error) {
+//         console.log(error.message)
+//         res.status(500).send("internal server error")
+//     }
 
-})
+// })
 module.exports = router

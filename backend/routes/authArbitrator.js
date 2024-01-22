@@ -16,11 +16,11 @@ const bcrypt = require('bcryptjs');
 
 // jason web tokken
 var jwt = require('jsonwebtoken')
-const JWT_SECRET = "harryisagood$boy"
+const JWT_SECRET = "nyaysathi$nyay@milega"
 
 // middleware
 const fetchadvocate = require('../middleware/fetchadvocate')
-
+const {protect} = require('../middleware/authMiddleware')
 // email handler
 const nodemailer = require("nodemailer")
 
@@ -53,7 +53,7 @@ const tokenAdvocateSchema = require('../models/tokenAdvocateSchema');
 
 
 
-router.get('/advocates',async(req,res)=>{
+router.get('/advocates',protect, async(req,res)=>{
     try {
         const advocate =  await Advocate.find();
         res.json(advocate)
@@ -65,12 +65,14 @@ router.get('/advocates',async(req,res)=>{
 
 
 // create a user  using :post "/api/authArbitrator".doesnt require auth
-router.post('/createadvocate', [body('name').notEmpty(),
-body('email').isEmail(),
-body('barcode').notEmpty(),
-body('aadhar').notEmpty(),
+router.post('/createadvocate',
+//  [body('name').notEmpty(),
+// body('email').isEmail(),
+// body('barcode').notEmpty(),
+// body('aadhar').notEmpty(),
 
-body('password').isLength({ min: 5 })], async (req, res) => {
+// body('password').isLength({ min: 5 })],
+ async (req, res) => {
     
     
     const { email } = req.body
@@ -120,9 +122,8 @@ body('password').isLength({ min: 5 })], async (req, res) => {
         });
         const authtoken = jwt.sign(data, JWT_SECRET)
         console.log(authtoken)
-// localStorage.setItem("authToken",authtoken)
+
         const otptoken = crypto.randomBytes(32).toString("hex")
-        // token schema // token generation for every new user
         const token = new Token({
             advocateId: advocate.id,
             token: OTP 
@@ -141,8 +142,6 @@ body('password').isLength({ min: 5 })], async (req, res) => {
         // succesfull generation of authentication token
         success = true
         console.log("advocate",advocate)
-        // res.send(advocate);
-        // res.json(advocate);
 
        if(advocate){
         res.status(201).json({
@@ -155,14 +154,9 @@ body('password').isLength({ min: 5 })], async (req, res) => {
       token: authtoken,
         })
        }
-       
-         res.json({ success, authtoken })
-        
-
-
     } catch (error) {
         console.log(error.message)
-        res.status(500).send("internal server error occured")
+        // res.status(500).send("internal server error occured")
     }
 
  })
@@ -170,11 +164,7 @@ body('password').isLength({ min: 5 })], async (req, res) => {
 // verefying the email and api/autharbitrator/verifyAdvocate
 router.post("/verifyAdvocate",async (req, res) =>{
     const {advocateId,otp} = req.body;
-    // const token = localStorage.getItem("authtoken")
     
-    //  console.log(advocateId);
-    // console.log(otp);
-    // let advocateId = req.advocate.id
     if(!advocateId || !otp.trim()){
         return res.status(500).send("cant fetch advocateid or otp")
     }
@@ -201,11 +191,7 @@ router.post("/verifyAdvocate",async (req, res) =>{
   if(tokenAdvocateSchemaToken.token !== otp)return res.status(500).send("provide valid token");
   console.log("tokken" + tokenAdvocateSchemaToken.token) 
   console.log("otp" + otp)
-//   console.log(tokenSchemaToken)
-//  const isMatched =  await verificationToken.compareToken(otp);
-//  console.log(otp)
-//  console.log(isMatched)
-//  if(!isMatched) return res.status(500).send("provide valid token"); 
+//    
 
   advocate.verified = true;
  await tokenAdvocateSchema.findByIdAndDelete(verificationToken._id);
@@ -239,15 +225,12 @@ router.post("/loginAdvocate", [body('email').isEmail(), body('password').exists(
     const { email, password} = req.body;
 
     try {
-
-       
-        // seraching from database
+// seraching from database
         let advocate = await Advocate.findOne({ email })
         console.log(advocate)
         // let userpassword = await User.findOne({password})
         if (!advocate) {
-
-            return res.status(400).json({ error: "login with correct credentials" })
+ return res.status(400).json({ error: "login with correct credentials" })
         }
 
         if(!advocate.verified){
@@ -283,37 +266,37 @@ router.post("/loginAdvocate", [body('email').isEmail(), body('password').exists(
 
 // ROUTE:3 get a user details after loggedin post request "/api/autharbitrator/getadvocater" login required
 
-router.get("/getadvocate", fetchadvocate, async (req, res) => {
+// router.get("/getadvocate", fetchadvocate, async (req, res) => {
 
 
-    try {
-        let advocateid = req.advocate.id
+//     try {
+//         let advocateid = req.advocate.id
 
-        const advocate = await Advocate.findById(advocateid).select("-password")
-        res.json(advocate)
-    } catch (error) {
-        console.log(error.message)
-        res.status(500).send("internal server error")
-    }
+//         const advocate = await Advocate.findById(advocateid).select("-password")
+//         res.json(advocate)
+//     } catch (error) {
+//         console.log(error.message)
+//         res.status(500).send("internal server error")
+//     }
 
-})
+// })
 
-router.get("/getSingleadvocate/:id", async (req, res) => {
+// router.get("/getSingleadvocate/:id", async (req, res) => {
 
 
-    try {
-        let advocate = await Advocate.findById(req.params.id)
+//     try {
+//         let advocate = await Advocate.findById(req.params.id)
 
-        if(!advocate){return res.status(404).send("advocate not found")}
+//         if(!advocate){return res.status(404).send("advocate not found")}
 
-res.json(advocate)
+// res.json(advocate)
 
-    } catch (error) {
-        console.log(error.message)
-            res.status(500).send("internal server error")
-    }
+//     } catch (error) {
+//         console.log(error.message)
+//             res.status(500).send("internal server error")
+//     }
 
-})
+// })
 
 
 module.exports = router
