@@ -20,13 +20,13 @@ const AdvocateSchema =  new Schema({
     },
     barcode:{
         type:String,
-        required:true,
-        unique:true,
+        // required:true,
+        // unique:true,
     },
     aadhar:{
         type:String,
-        required:true,
-        unique:true,
+        // required:true,
+        // unique:true,
     },
     education:{
         type:String

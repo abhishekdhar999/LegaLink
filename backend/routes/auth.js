@@ -69,7 +69,7 @@ router.post('/createuser',
 // body('email').isEmail(),
 // body('password').isLength({ min: 5 })],
  async (req, res) => {
-    const { email } = req.body
+    const { email ,isUser} = req.body
     // const verificationCode = Math.floor(100000 + Math.random() * 900000);
       let success = false;
     // if there are errors return bad request and the errors
@@ -95,7 +95,11 @@ router.post('/createuser',
         user = await User.create({
             name: req.body.name,
             email: req.body.email,
-            password: securedpassword
+            password: securedpassword,
+            state:req.body.state,
+            isUser:isUser,
+            barcode:req.body.barcode,
+            aadhar:req.body.aadhar
         })
 
         // OTP GENERATION WORK
@@ -129,6 +133,7 @@ console.log("otp",OTP)
       isAdmin: user.isAdmin,
       pic: user.pic,
       token: authtoken,
+      state:user.state
             })
         }
     } catch (error) {

@@ -4,11 +4,12 @@ const fetchuser = require('../middleware/fetchuser')
 const fetchadvocate = require('../middleware/fetchadvocate')
 const Cases = require('../models/Cases')
 const { body ,validationResult,query} = require('express-validator');
+const {protect} = require('../middleware/authMiddleware')
 // Route:1 get all case of an advocate using GET "api/cases/fetchallcases" 
-router.get("/fetchallcases",fetchadvocate,async(req,res)=>{
-    console.log("advocate id skjdbcjd:",req.advocate.id)
+router.get("/fetchallcases",protect,async(req,res)=>{
+    console.log("advocate id skjdbcjd:",req.user.id)
 try {
-    const cases = await Cases.find({advocate:req.advocate.id})
+    const cases = await Cases.find({advocate:req.user.id})
     
     console.log( "my cases:",cases)
     res.json(cases)
@@ -20,7 +21,7 @@ try {
 
 })
 // ROUTES:2 add all cases of an advocate using POST  "api/cases/addcase" login required
-router.post("/addcase",fetchadvocate,[body("title").notEmpty(),body("description").notEmpty()],async(req,res)=>{
+router.post("/addcase",protect,[body("title").notEmpty(),body("description").notEmpty()],async(req,res)=>{
 
     try {
 const {title,description} = req.body;
@@ -32,7 +33,7 @@ if(!result.isEmpty()){
 
      
         const cases =new Cases({
-            title,description,advocate:req.advocate.id
+            title,description,advocate:req.user.id
         }) 
         const savedcase = await cases.save()
         res.json(savedcase)
@@ -48,12 +49,12 @@ if(!result.isEmpty()){
 })
 
 // ROUTE:3  delete a case using delete "api/cases/deletecase" login required
-router.delete("/deletecase/:id",fetchadvocate,async(req,res)=>{
+router.delete("/deletecase/:id",protect,async(req,res)=>{
 
 let casetoDelete = await Cases.findById(req.params.id)
 if(!casetoDelete){return res.status(404).send("not found")}
 
-if(casetoDelete.advocate.toString() !== req.advocate.id){
+if(casetoDelete.advocate.toString() !== req.user.id){
     return res.status(401).send("not allowed")
 }
 
@@ -66,7 +67,7 @@ if(casetoDelete.advocate.toString() !== req.advocate.id){
 
 // ROUTE:4 UPDATING AN EXISTING NODE   "api/cases/updatecase" login required
 
-router.put("/updatecase/:id",fetchadvocate,async(req,res)=>{
+router.put("/updatecase/:id",protect,async(req,res)=>{
  const {title,description} =req.body
 
  const newcase = {};
@@ -74,10 +75,11 @@ router.put("/updatecase/:id",fetchadvocate,async(req,res)=>{
  if(description){newcase.description = description}
 
 //  find the note to be updated and update it
+console.log("update case",req.params.id)
 let casetoUpdate = await Cases.findById(req.params.id);
 if(!casetoUpdate){return res.status(404).send("not found")}
 
-if(casetoUpdate.advocate.toString() !== req.advocate.id){
+if(casetoUpdate.advocate.toString() !== req.user.id){
     return res.status(401).send("not allowed")
 }
 

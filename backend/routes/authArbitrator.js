@@ -4,7 +4,7 @@ const router = express.Router()
 
 // mongodb user model
 const Advocate = require('../models/Advocate')
-
+const User = require("../models/User")
 // mongodb user verification model
 const userVerification = require('../models/tokenSchema')
 
@@ -43,7 +43,7 @@ const Token = require("../models/tokenAdvocateSchema");
 const sendEmail = require("../utils/sendEmail");
 const crypto = require('crypto');
 const tokenAdvocateSchema = require('../models/tokenAdvocateSchema');
-
+const tokenSchema = require('../models/tokenSchema');
 
 
 
@@ -55,7 +55,7 @@ const tokenAdvocateSchema = require('../models/tokenAdvocateSchema');
 
 router.get('/advocates',protect, async(req,res)=>{
     try {
-        const advocate =  await Advocate.find();
+        const advocate =  await User.find({isAdvocate:true});
         res.json(advocate)
     } catch (error) {
         console.error(error.message);
@@ -75,7 +75,7 @@ router.post('/createadvocate',
  async (req, res) => {
     
     
-    const { email } = req.body
+    const { email ,isAdvocate,isBarcodeRequired} = req.body
     console.log(req.body);
     // const verificationCode = Math.floor(100000 + Math.random() * 900000);
     let success = false;
@@ -87,7 +87,7 @@ router.post('/createadvocate',
 
     try {
         // chech whether the Advocate exists already
-        let advocate = await Advocate.findOne({ email: req.body.email })
+        let advocate = await User.findOne({ email: req.body.email })
 
         if (advocate) {
             return res.status(400).json({ success, error: "advocate with this email already exists" })
@@ -97,7 +97,7 @@ router.post('/createadvocate',
 
         const securedpassword = await bcrypt.hash(req.body.password, salt)
         // creating  a new Advocate
-        advocate = await Advocate.create({
+        advocate = await User.create({
             name: req.body.name,
             email: req.body.email,
             verified:false,
@@ -105,7 +105,8 @@ router.post('/createadvocate',
             barcode:req.body.barcode,
             aadhar:req.body.aadhar,
             state:req.body.state,
-            
+            isAdvocate:isAdvocate,
+            isBarcodeRequired:isBarcodeRequired
         })
 
         // await advocate.save()
@@ -116,8 +117,8 @@ router.post('/createadvocate',
 
         // jwt token
         const data = ({
-            advocate: {
-                id: advocate.id
+            user : {
+                id: advocate._id
             },
         });
         const authtoken = jwt.sign(data, JWT_SECRET)
@@ -152,6 +153,7 @@ router.post('/createadvocate',
       aadhar:advocate.aadhar,
       profilePicture: advocate.pic,
       token: authtoken,
+      isAdvocate:advocate.isUser
         })
        }
     } catch (error) {
@@ -172,7 +174,7 @@ router.post("/verifyAdvocate",async (req, res) =>{
         return res.status(500).send("not valid object id")
     }
 
-   const advocate = await Advocate.findById(advocateId)
+   const advocate = await User.findById(advocateId)
 
    console.log(advocate)
    if(!advocate) return res.status(500).send("advocate not found");
@@ -181,12 +183,12 @@ router.post("/verifyAdvocate",async (req, res) =>{
     return res.status(500).send("advocate already verefied");
    }
 
-  const verificationToken = await tokenAdvocateSchema.findOne({advocateId:advocate.id})
+  const verificationToken = await tokenSchema.findOne({advocateId:advocate.id})
 
   console.log(verificationToken)
   if(!verificationToken) return res.status(500).send("advocate not found"); 
 
-  const tokenAdvocateSchemaToken = await tokenAdvocateSchema.findOne({token:otp})
+  const tokenAdvocateSchemaToken = await tokenSchema.findOne({token:otp})
  
   if(tokenAdvocateSchemaToken.token !== otp)return res.status(500).send("provide valid token");
   console.log("tokken" + tokenAdvocateSchemaToken.token) 
@@ -194,7 +196,7 @@ router.post("/verifyAdvocate",async (req, res) =>{
 //    
 
   advocate.verified = true;
- await tokenAdvocateSchema.findByIdAndDelete(verificationToken._id);
+ await tokenSchema.findByIdAndDelete(verificationToken._id);
 
  try {
     await advocate.save();
@@ -216,7 +218,7 @@ router.post("/verifyAdvocate",async (req, res) =>{
 //  Authinticate the user using post "api/autharbitrator/loginAdvocate" no login required
 router.post("/loginAdvocate", [body('email').isEmail(), body('password').exists()], async (req, res) => {
 
-    // let success =false;
+     let success =false;
     const result = validationResult(req);
     if (!result.isEmpty()) {
         return res.status(400).json({  })
@@ -226,8 +228,8 @@ router.post("/loginAdvocate", [body('email').isEmail(), body('password').exists(
 
     try {
 // seraching from database
-        let advocate = await Advocate.findOne({ email })
-        console.log(advocate)
+        let advocate = await User.findOne({ email })
+        console.log("advocate",advocate)
         // let userpassword = await User.findOne({password})
         if (!advocate) {
  return res.status(400).json({ error: "login with correct credentials" })
@@ -236,19 +238,19 @@ router.post("/loginAdvocate", [body('email').isEmail(), body('password').exists(
         if(!advocate.verified){
             return res.status(400).json({ error: "User not verified. Please verify your email first." }); 
         }
-        const passwordCompare = await bcrypt.compare(password, advocate.password)
-        if (!passwordCompare) {
-            success = false
-            return res.status(400).json({ success, error: "incorrect password" })
-        }
+        // const passwordCompare = await bcrypt.compare(password, advocate.password)
+        // if (!passwordCompare) {
+        //     success = false
+        //     return res.status(400).json({  error: "incorrect password" })
+        // }
 
         const data = {
-            advocate: {
-                id: advocate.id
+            user: {
+                id: advocate._id
             }
         }
         const authtoken = jwt.sign(data, JWT_SECRET)
-        let success = true
+         success = true
         console.log(authtoken)
         res.json({ success, _id: advocate._id,
             name: advocate.name,
@@ -256,7 +258,8 @@ router.post("/loginAdvocate", [body('email').isEmail(), body('password').exists(
             barcode:advocate.barcode,
             aadhar:advocate.aadhar,
             profilePicture: advocate.pic,
-            token: authtoken, })
+            token: authtoken,
+        state:advocate.state })
     } catch (error) {
         console.log(error.message)
         res.status(500).send("internal server error")
@@ -266,37 +269,37 @@ router.post("/loginAdvocate", [body('email').isEmail(), body('password').exists(
 
 // ROUTE:3 get a user details after loggedin post request "/api/autharbitrator/getadvocater" login required
 
-// router.get("/getadvocate", fetchadvocate, async (req, res) => {
+router.get("/getadvocate", protect, async (req, res) => {
 
 
-//     try {
-//         let advocateid = req.advocate.id
+    try {
+        let advocateid = req.user.id
 
-//         const advocate = await Advocate.findById(advocateid).select("-password")
-//         res.json(advocate)
-//     } catch (error) {
-//         console.log(error.message)
-//         res.status(500).send("internal server error")
-//     }
+        const advocate = await User.findById(advocateid).select("-password")
+        res.json(advocate)
+    } catch (error) {
+        console.log(error.message)
+        res.status(500).send("internal server error")
+    }
 
-// })
+})
 
-// router.get("/getSingleadvocate/:id", async (req, res) => {
+router.get("/getSingleadvocate/:id", async (req, res) => {
 
 
-//     try {
-//         let advocate = await Advocate.findById(req.params.id)
+    try {
+        let advocate = await User.findById(req.params.id)
 
-//         if(!advocate){return res.status(404).send("advocate not found")}
+        if(!advocate){return res.status(404).send("advocate not found")}
 
-// res.json(advocate)
+res.json(advocate)
 
-//     } catch (error) {
-//         console.log(error.message)
-//             res.status(500).send("internal server error")
-//     }
+    } catch (error) {
+        console.log(error.message)
+            res.status(500).send("internal server error")
+    }
 
-// })
+})
 
 
 module.exports = router

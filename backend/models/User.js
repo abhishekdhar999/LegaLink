@@ -1,40 +1,4 @@
-// const mongoose = require('mongoose')
-// const {Schema} = mongoose;
-// const UserSchema =  new Schema({
-//     name:{
-//         type:String,
-//         required:true 
-//     },
-//     email:{
-//         type:String,
-//         required:true,
-//          unique:true
-//     },
-//     password:{
-//         type:String,
-//         required:true
-//     },
-    
 
-//     verified:{
-//         type:Boolean,
-//         default:false
-//     },
-//     picture:{
-//         type:String,
-//     }
-// },{
-//     timestamps:true,
-// });
-
-
-
-
-// https://plus.unsplash.com/premium_photo-1666900440561-94dcb6865554?q=80&w=654&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
-// const mongoose = require('mongoose')
-// const user = mongoose.model('user',UserSchema)
-// user.createIndexes()
-// module.exports  = user
 
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
@@ -50,7 +14,12 @@ const UserSchema = mongoose.Schema(
       default:
         "https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg",
     },
-    isAdmin: {
+    isUser: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
+    isAdvocate:{
       type: Boolean,
       required: true,
       default: false,
@@ -61,6 +30,36 @@ const UserSchema = mongoose.Schema(
   },
   picture:{
       type:String,
+  },
+  state:{
+    type:String,
+    required:true,
+},
+rating:{
+  type:String
+},
+education:{
+  type:String
+},
+barcode:{
+  type:String,
+  required:true,
+  unique:true
+  // required:function(){
+  //   return this.isBarcodeRequired
+  // }
+  },
+aadhar:{
+  type:String,
+  required:true,
+  unique:true
+  // required:function(){
+  //   return this.isBarcodeRequired
+  // }
+  },
+  isBarcodeRequired:{
+    type:Boolean,
+    default:false,
   }
   },
   { timestaps: true }
@@ -74,7 +73,7 @@ UserSchema.pre("save", async function (next) {
   if (!this.isModified) {
     next();
   }
-
+  // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZHZvY2F0ZSI6eyJpZCI6IjY1YWZkOWNmN2IyMDY0YzcwZTA3Yzg1OCJ9LCJpYXQiOjE3MDYwMjYxODV9.GV4SrsktOwPYLtFLaYAlE6_wNXHSdQ1RR2T7FlN30sc
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });

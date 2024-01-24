@@ -1,8 +1,9 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Advocate = require("../models/Advocate")
 const asyncHandler = require("express-async-handler");
 const JWT_SECRET = "nyaysathi$nyay@milega"
-const protect = asyncHandler(async (req, res, next) => {
+const protect = async (req, res, next) => {
   
   // const fetchuser = (req,res,next)=>{
     //     const token = req.header('auth-token');
@@ -25,9 +26,11 @@ const protect = asyncHandler(async (req, res, next) => {
 console.log("authmiddleware token hjjhbhgggsg",token)
       //decodes token id
       const decoded = jwt.verify(token,JWT_SECRET );
-console.log("decoded",decoded)
+console.log("decodeddddddd",decoded)
+
 console.log("decoded.id",decoded.user.id)
-      req.user = await User.findById(decoded.user.id).select("-password");
+
+      req.user = await User.findById(decoded.user.id).select("-password")  
 console.log("req.user = ",req.user)
       next();
     } catch (error) {
@@ -37,7 +40,7 @@ console.log("req.user = ",req.user)
   }
 
   
-});
+};
 
 
 // var jwt = require('jsonwebtoken');
