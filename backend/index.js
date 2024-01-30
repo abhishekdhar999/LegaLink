@@ -12,7 +12,7 @@ const port = 6001
 
 app.use(express.json())
 app.use(cors())
-
+app.use(express.static('storage'))
 
 //Available Routes
 app.use('/api/auth',require('./routes/auth'))

@@ -130,7 +130,8 @@ console.log("otp",OTP)
                 _id: user._id,
       name: user.name,
       email: user.email,
-      isAdmin: user.isAdmin,
+      isUser:user.isUser,
+      isAdvocate:user.isAdvocate,
       pic: user.pic,
       token: authtoken,
       state:user.state
@@ -246,7 +247,8 @@ console.log("auth vali usedid",user)
         res.json({ success,  _id: user._id,
             name: user.name,
             email: user.email,
-            isAdmin: user.isAdmin,
+            isUser:user.isUser,
+            isAdvocate:user.isAdvocate,
             pic: user.pic,
             token: authtoken, })
         

@@ -1,7 +1,8 @@
 // express routes
 const express = require('express')
 const router = express.Router()
-
+const multer = require("multer");
+const path = require("path");
 // mongodb user model
 const Advocate = require('../models/Advocate')
 const User = require("../models/User")
@@ -21,6 +22,7 @@ const JWT_SECRET = "nyaysathi$nyay@milega"
 // middleware
 const fetchadvocate = require('../middleware/fetchadvocate')
 const {protect} = require('../middleware/authMiddleware')
+const {fileUpload} = require("../utils/fileUpload")
 // email handler
 const nodemailer = require("nodemailer")
 
@@ -44,7 +46,7 @@ const sendEmail = require("../utils/sendEmail");
 const crypto = require('crypto');
 const tokenAdvocateSchema = require('../models/tokenAdvocateSchema');
 const tokenSchema = require('../models/tokenSchema');
-
+const upload = multer({dest:'.storage/images'})
 
 
 
@@ -153,7 +155,8 @@ router.post('/createadvocate',
       aadhar:advocate.aadhar,
       profilePicture: advocate.pic,
       token: authtoken,
-      isAdvocate:advocate.isUser
+      isAdvocate:advocate.isAdvocate,
+      isUser:advocate.isuser
         })
        }
     } catch (error) {
@@ -259,6 +262,8 @@ router.post("/loginAdvocate", [body('email').isEmail(), body('password').exists(
             aadhar:advocate.aadhar,
             profilePicture: advocate.pic,
             token: authtoken,
+            isUser:advocate.isUser,
+      isAdvocate:advocate.isAdvocate,
         state:advocate.state })
     } catch (error) {
         console.log(error.message)
@@ -301,5 +306,64 @@ res.json(advocate)
 
 })
 
+router.post("/uploadPictureAdvocate/:id",fileUpload.single('file'), async (req, res) => {
+    console.log("innnnnnnnnnnnnnnn")
+
+// if file have then push file into reqBody then process update
+const id  = req.params.id
+console.log("id in upload picture",id)
+var imgUrl = "";
+if(req.file){
+    var imgUrl = `storage/images/${req.file.filename}`;
+    console.log("img url",imgUrl)
+    // reqBody.pic = imgUrl
+}
+
+try{
+    const userinfo = await User.findById(id);
+    console.log("userInfo",userinfo)
+    const userPhotoInfo = userinfo.pic;
+    console.log("userPhotoInfo",userPhotoInfo)
+
+    const updateItem = await User.findByIdAndUpdate(id,{pic:imgUrl},{ new: true });
+    
+    if (!updateItem) {
+        return res.status(404).json({ message: "User not found" });
+    }else{
+        console.log("update item ",updateItem)
+    }
+
+     res.json({
+        code:200,
+        message: "user update information successfully",
+        data:updateItem
+    })
+}catch{
+    console.log("in catch block of update profile pic")
+}
+})
+
+
+
+
+router.get("/getImage/:id", async (req, res) => {
+    console.log("innnnnnnnnnnnnnnn get image api")
+const id  =  req.params.id
+console.log("id in get image",id)
+// if file have then push file into reqBody then process update
+
+
+try{
+    const userinfo = await User.findById(id);
+     console.log("userInfo in getImage",userinfo)
+    res.json({
+        code:200,
+        message: "user get image information successfully",
+        data:userinfo
+    })
+}catch{
+    console.log("in catch block of get image ")
+}
+})
 
 module.exports = router
